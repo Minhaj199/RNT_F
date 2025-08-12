@@ -4,25 +4,31 @@ import { TreeIcon } from './components/TreeIcons';
 import { Plus } from 'lucide-react';
 import { NodeForm } from './components/NodeForm';
 import { TreeNode } from './components/TreeNode';
-import type { NodeWithChildNode } from './types';
-
-
+import type { IOperations, NodeData, NodeWithChildNode } from './types';
+import { request } from './utils/axiosUtil';
 
 const App = () => {
   const [rootNodes, setRootNodes] = useState<NodeWithChildNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string|null>(null);
   const [showAddRoot, setShowAddRoot] = useState(false);
-  const operation=new Operations([])
-  
+  const [fetchedData,setFetchData]=useState<NodeData[]>([])
+  let operation:IOperations=new Operations()
+
+  useEffect(()=>{
+    const nodes = operation.getRootNodes(fetchedData);
+      setRootNodes(nodes);
+  },[fetchedData])
+
   const loadRootNodes = async () => {
     try {
       setLoading(true);
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const nodes = operation.getRootNodes();
-      setRootNodes(nodes);
+
+      const resultData:{data:NodeData[]}=await request({url:'/api/fetch-nodes'})
+      setFetchData(resultData.data) 
+      
     } catch (err) {
+      
       setError('Failed to load nodes');
       console.error('Error loading nodes:', err);
     } finally {
@@ -36,12 +42,16 @@ const App = () => {
 
   const handleCreateRootNode = async (name:string) => {
     try {
-      const newNode = operation.createNode({ name });
-      setRootNodes(prev => [...prev, { ...newNode, children: [] }]);
-      setShowAddRoot(false);
+     const nodeNode= await operation.createNode({ name },fetchedData);
+     setRootNodes(prev=>[...prev,nodeNode]) 
+     setShowAddRoot(false);
     } catch (err) {
-      setError('Failed to create node');
-      console.error('Error creating node:', err);
+      if(err instanceof Error){
+        setError(err.message)
+      }else{
+        setError('Failed to create node');
+        console.error('Error creating node:', err);
+      }
     }
   };
 
@@ -67,7 +77,7 @@ const App = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="container mx-auto px-4 py-6 max-w-4xl">
-        {/* Header */}
+
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center space-x-3">
@@ -90,7 +100,7 @@ const App = () => {
             </button>
           </div>
 
-          {/* Add Root Node Form */}
+
           {showAddRoot && (
             <div className="mt-4 pt-4 border-t">
               <NodeForm
@@ -103,7 +113,7 @@ const App = () => {
           )}
         </div>
 
-        {/* Error Message */}
+   
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center justify-between">
             <span>{error}</span>
@@ -119,7 +129,7 @@ const App = () => {
 
         
 
-        {/* Tree Structure */}
+
         <div className="bg-white rounded-lg shadow-sm border p-6">
           {rootNodes.length === 0 ? (
             <div className="text-center py-12">
@@ -157,37 +167,24 @@ const App = () => {
                   level={0}
                   onRefresh={refreshNodes}
                   operation={operation}
+                  nodes={fetchedData}
+                  refetch={loadRootNodes}
                 />
               ))}
             </div>
           )}
         </div>
 
-        {/* Stats & Info */}
-        {rootNodes.length > 0 && (
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="bg-white rounded-lg shadow-sm border p-4 text-center">
-              <div className="text-2xl font-bold text-blue-600">{rootNodes.length}</div>
-              <div className="text-sm text-gray-600">Root Nodes</div>
-            </div>
-            <div className="bg-white rounded-lg shadow-sm border p-4 text-center">
-              <div className="text-2xl font-bold text-green-600">{operation.nodes.length}</div>
-              <div className="text-sm text-gray-600">Total Nodes</div>
-            </div>
-            <div className="bg-white rounded-lg shadow-sm border p-4 text-center">
-              <div className="text-2xl font-bold text-purple-600">∞</div>
-              <div className="text-sm text-gray-600">Max Depth</div>
-            </div>
-          </div>
-        )}
+        
 
-        {/* Footer */}
+  
         <div className="mt-8 text-center text-sm text-gray-500">
           <p>Recursive Node Tree App - Full Stack Implementation</p>
           <p className="mt-1">Features: Infinite nesting • Recursive deletion • Persistent storage</p>
         </div>
       </div>
     </div>
+
   );
 };
 

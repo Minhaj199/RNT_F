@@ -1,58 +1,57 @@
+import { request } from "./utils/axiosUtil";
 import type { IOperations, NodeData, NodeWithChildNode } from "./types";
 
 
 export class Operations implements IOperations {
-  nodes:NodeData[]
- constructor(nodes:NodeData[]){
-  this.nodes=nodes||[]
- }
-  getRootNodes():NodeWithChildNode[] {
-    const rootNodes = this.nodes.filter(node => !node.parentId);
-    return rootNodes?.map(node => ({...node,children: this.getNodeChildren(node._id)}));
+
+ 
+  getRootNodes(nodes:NodeData[]):NodeWithChildNode[] {
+    const rootNodes = nodes.filter(node => !node.parentId);
+    const data=rootNodes?.map(node => ({...node,children: this.getNodeChildren(node._id,nodes)}));
+    return data
   }
 
-  getNodeChildren(nodeId:string):NodeWithChildNode[] {
+  getNodeChildren(nodeId:string,nodes:NodeData[]):NodeWithChildNode[] {
    
-   const childIds:string[] = this.nodes.find(n => n._id === nodeId)?.children || [];
-
+   const childIds:string[] = nodes.find(n => n._id === nodeId)?.children || [];
    return childIds?.map(childId => {
-      const child = this.nodes.find(n => n._id === childId);
+     const child = nodes.find(n => n._id === childId);
 
-      return child ? {...child,children: this.getNodeChildren(childId)} : null}).filter((n):n is NodeWithChildNode =>n!==null);
+
+      return child ? {...child,children: this.getNodeChildren(childId,nodes)} : null}).filter((n):n is NodeWithChildNode =>n!==null);
   }
 
-  createNode (nodeData:{name:string,parentId?:string}) {
-    const newId = (Math.max(...this.nodes.map(n => parseInt(n._id))) + 1).toString();
+  async createNode (nodeData:{name:string,parentId?:string},nodes:NodeData[]) {
+    
+    try {
     const newNode = {
-      _id: newId,
       name: nodeData.name,
       parentId: nodeData.parentId || null,
       children: [],
-      level: nodeData.parentId ? (this.nodes.find(n => n._id === nodeData.parentId)?.level||-1) + 1 : 0
+      level: nodeData.parentId ? ((nodes.find(n => n._id === nodeData.parentId)?.level)??-1) + 1 : 0
     };
     /////////////////////////// post request to create new node
-    '.create new doc'
-    '.update Array'
-    
-    this.nodes.push(newNode);
-    
-    // Update parent's children array
-    if (nodeData.parentId) {
-      const parent = this.nodes.find(n => n._id === nodeData.parentId);
-      if (parent) {
-        parent.children.push(newId);
+    const result:{success:boolean,newData:NodeWithChildNode}=await request({url:'/api/add-node',method:'post',data:{...newNode,level:newNode.level},headers:{'Content-Type':'application/json'}})
+    return {...result.newData}
+    } catch (error) {
+      if(error instanceof Error){
+        throw new Error(error.message)
+      }else{
+        throw new Error('internal error')
       }
     }
-    return { ...newNode, children: [] };
+    
   }
 
-  deleteNode (nodeId:string) {
-    const nodeToDelete = this.nodes.find(n => n._id === nodeId)
+  async deleteNode (nodeId:string,nodes:NodeData[]) {
+    try {
+
+   
+      const nodeToDelete = nodes.find(n => n._id === nodeId)
     if (!nodeToDelete) return false;
 
-    // Recursively collect all descendant IDs
     const getAllDescendants = (id:string) => {
-      const node = this.nodes.find(n => n._id === id);
+      const node = nodes.find(n => n._id === id);
       if (!node) return [];
       
       let descendants = [id];
@@ -63,18 +62,19 @@ export class Operations implements IOperations {
     };
 
     const idsToDelete = getAllDescendants(nodeId);
-    
-    // Remove from parent's children array
+   await request({url:'/api/remove-nodes',method:'delete',data:idsToDelete})
     if (nodeToDelete.parentId) {
-      const parent = this.nodes.find(n => n._id === nodeToDelete.parentId);
+      const parent = nodes.find(n => n._id === nodeToDelete.parentId);
       if (parent) {
         parent.children = parent.children.filter(id => id !== nodeId);
       }
     }
-    
-    // Remove all descendants from nodes array
-    this.nodes = this.nodes.filter(node => !idsToDelete.includes(node._id));
+    nodes = nodes.filter(node => !idsToDelete.includes(node._id));
     
     return true;
+    } catch (error) {
+      return false
+    }
+    
   }
 };

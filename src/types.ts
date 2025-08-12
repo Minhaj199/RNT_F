@@ -1,3 +1,4 @@
+
 export interface NodeData{
     _id:string
     name:string,
@@ -9,7 +10,7 @@ export interface NodeWithChildNode{
      _id:string
     name:string,
     parentId:string|null
-    children:(NodeWithChildNode)[]
+    children:NodeWithChildNode[]
     level:number
 }
 export type NodeFormProb={
@@ -19,17 +20,17 @@ export type NodeFormProb={
     loading?:boolean
 }
 export interface IOperations{
-  nodes:NodeData[]
-  getRootNodes:()=>NodeWithChildNode[]
-  getNodeChildren:(nodeId:string)=>NodeWithChildNode[]
-  createNode:(nodedata:{name:string,parentId?:string})=>NodeData
-  deleteNode(nodeId: string): boolean
+  getRootNodes:(nodes:NodeData[])=>NodeWithChildNode[]
+  getNodeChildren:(nodeId:string,nodedata:NodeData[])=>NodeWithChildNode[]
+  createNode:(nodedata:{name:string,parentId?:string},nodes:NodeData[])=>Promise<NodeWithChildNode>
+  deleteNode(nodeId: string,nodes:NodeData[]):Promise< boolean>
 }
 export type TreeNodeProp={
-    node:NodeWithChildNode|NodeData
+    node:NodeWithChildNode
     onNodeDeleted:(deletedNodeId:string)=>void
     level:number,
     onRefresh: () => void
     operation:IOperations
-
+    nodes:NodeData[]
+    refetch:()=>void
 }
