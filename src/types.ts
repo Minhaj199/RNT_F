@@ -14,23 +14,21 @@ export interface NodeWithChildNode{
     level:number
 }
 export type NodeFormProb={
-    onSubmit:(name:string)=>Promise<void>
+    onSubmit:(name:string)=>void
     onCancel:()=>void
     placeholder:string
     loading?:boolean
+   
 }
 export interface IOperations{
   getRootNodes:(nodes:NodeData[])=>NodeWithChildNode[]
   getNodeChildren:(nodeId:string,nodedata:NodeData[])=>NodeWithChildNode[]
-  createNode:(nodedata:{name:string,parentId?:string},nodes:NodeData[])=>Promise<NodeWithChildNode>
-  deleteNode(nodeId: string,nodes:NodeData[]):Promise< boolean>
+  createNode:(nodedata:Partial<NodeData>,nodes:NodeData[])=>Promise<NodeData>
+
 }
-export type TreeNodeProp={
-    node:NodeWithChildNode
-    onNodeDeleted:(deletedNodeId:string)=>void
-    level:number,
-    onRefresh: () => void
-    operation:IOperations
-    nodes:NodeData[]
-    refetch:()=>void
+export interface TreeNodeProps {
+  node: NodeWithChildNode|NodeData;
+  allNodes: NodeData[];
+  onCreateNode: (data: Partial<NodeData>) => void;
+  onDeleteNode: (id: string) => void;
 }
