@@ -23,6 +23,7 @@ Built with:
 - Notification system for success/error feedback
 - Modular and scalable codebase
 - Loading ui
+- Errors handled securly 
 
 ## Getting Started
 
