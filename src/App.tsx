@@ -7,6 +7,7 @@ import { TreeNode } from './components/TreeNode';
 import type { IOperations, NodeData, NodeWithChildNode } from './types';
 import { request } from './utils/axiosUtil';
 import { enqueueSnackbar } from 'notistack';
+import Notiflix from 'notiflix';
 
 const App = () => {
   const [fetchedData, setFetchedData] = useState<NodeData[]>([]);
@@ -43,7 +44,9 @@ const App = () => {
   };
 
   const handleDeleteNode = async(id: string) => {
-    const collectIds = (nodeId: string, all: NodeData[]): string[] => {
+    Notiflix.Confirm.show('Delete','Are you sure deleting ?','Yes','No',()=>deleteFunction())
+   async function deleteFunction(){
+        const collectIds = (nodeId: string, all: NodeData[]): string[] => {
       const childIds = all.filter(n => n.parentId === nodeId).flatMap(n => collectIds(n._id, all));
       return [nodeId, ...childIds];
     };
@@ -52,6 +55,8 @@ const App = () => {
     await request({url:'/api/remove-nodes',method:'delete',data:idsToRemove})
     setFetchedData(prev => prev.filter(n => !idsToRemove.includes(n._id)));
   };
+    }
+  
 
   if (loading) {
     return (

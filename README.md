@@ -29,6 +29,7 @@ Built with:
 ### 1. Clone the repo
 ```
 git clone https://github.com/Minhaj199/RNT_F.git
+cd RNT_F
 ```
 ### 2. Install dependencies
 ```
